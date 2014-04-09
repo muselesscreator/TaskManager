@@ -1,0 +1,11 @@
+check upgrade/downgrade feature
+write IK test (from front to back should fail with 'curren_position'
+SMOKE: gripper (electric)
+revamp recover pass page on wiki
+upgrade downgrade test
+==========
+fix demo mode (config formatting and new sdk tags)
+Tests for gripper/URDF features
+Get PWM finalized
+Build test list for SSH feature
+Build Island Network schema
