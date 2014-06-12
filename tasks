@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 class TaskManager(object):
     def __init__(self, args):
-        self.my_dir = '%s/Dev/tasks' % os.environ['HOME']
+        self.my_dir = '%s/Dev/TaskManager' % os.environ['HOME']
         self.args = args
         try:
             self.main_list = open('%s/prefs.txt' % self.my_dir).read()
@@ -75,7 +75,7 @@ class TaskManager(object):
         f = open('%s/prefs.txt' % self.my_dir, 'w')
         f.write('%s.txt' % new)
         self.task_file = '%s/lists/%s.txt' % (self.my_dir, new)    
-        self.get_tasks(self.task_file)
+        self.get_tasks()
 
     def parse_args(self):
         if self.args.lt:
@@ -105,16 +105,16 @@ class TaskManager(object):
                              "Would you like to replace it? (y/N)")
                 if resp == 'y':
                     os.rename(task_file, '%s/lists/%s.txt' % (self.my_dir, self.args.mv))
-                    change_default(self.args.mv)
+                    self.change_default(self.args.mv)
             else:
                 os.rename(task_file, '%s/lists/%s.txt' % (self.my_dir, self.args.mv))
-                change_default(self.args.mv)
+                self.change_default(self.args.mv)
         elif self.args.rm != None:
             resp = raw_input("Are you sure you want to delete the %s list? (y/N)" % self.args.rm)
             if resp == 'y':
-                os.remove('%s/lists/%s.txt' % self.my_dir, self.args.rm)
+                os.remove('%s/lists/%s.txt' % (self.my_dir, self.args.rm))
         elif self.args.cd != None:
-            change_default(self.args.cd)
+            self.change_default(self.args.cd)
         elif self.args.ls:
             lists = self.get_lists()
             print "="*30
@@ -128,7 +128,8 @@ class TaskManager(object):
             self.tasks['lt'] = t_list
         else:
             self.tasks['st'] = t_list
-        self.write_changes()
+        if self.args.rm == None:
+            self.write_changes()
 
     def word_wrap(self, text):
         max_len = 45

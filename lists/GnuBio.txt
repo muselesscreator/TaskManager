@@ -1,0 +1,4 @@
+research "single responsibility principle"
+==========
+make a webui sandbox
+get ctrlp working
