@@ -1,10 +1,11 @@
 #!/usr/bin/python
 import os
 import argparse
+from devlogger import devlog
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-a", "--append", help="add a task to the end of the list", dest='a')
-parser.add_argument("-p", "--prepend", help="add a task to the beginning of the list", dest='p')
+parser.add_argument("-a", "--append", help="add a task to the end of the list", dest='a', action='store_true')
+parser.add_argument("-p", "--prepend", help="add a task to the beginning of the list", dest='p', action='store_true')
 parser.add_argument("-d", "--delete", help="delete the task at the given index", dest='d', type=int)
 parser.add_argument("-mu", "--moveup", help="move the selected task up in priority", dest='mu', type=int)
 parser.add_argument("-md", "--movedown", help="move the selected task down in priority", dest='md', type=int)
@@ -15,6 +16,7 @@ parser.add_argument("-cd", "--change-list", help="Change lists", dest = 'cd')
 parser.add_argument("-rm", "--delete-list", help="Delete a list", dest = 'rm')
 parser.add_argument("-ls", "--list-lists", help="lists the ... lists", dest = 'ls', action="store_true")
 parser.add_argument("-mv", "--rename-list", help="rename the list", dest = 'mv')
+parser.add_argument("-f", "--finish", help="finish/log the task", dest='f', type=int)
 args = parser.parse_args()
 
 class TaskManager(object):
@@ -85,14 +87,17 @@ class TaskManager(object):
 
         if self.args.d != None:
             del t_list[self.args.d]
+        elif self.args.f != None:
+            devlog(t_list[self.args.f])
+            del t_list["Finished task: %s" % self.args.f]
         elif self.args.mu != None:
             t_list.insert(self.args.mu-1, t_list.pop(self.args.mu))
         elif self.args.md != None:
             t_list.insert(self.args.md+1, t_list.pop(self.args.md))  
-        elif self.args.a != None:
-            t_list.append(self.args.a)
-        elif self.args.p != None:
-            t_list.insert(0, self.args.p)
+        elif self.args.a:
+            t_list.append(raw_input())
+        elif self.args.p:
+            t_list.insert(0, raw_input())
         elif self.args.m1 != None:
             t_list.insert(0, t_list.pop(self.args.m1))
         elif self.args.ml != None:

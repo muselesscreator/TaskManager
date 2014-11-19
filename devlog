@@ -1,0 +1,32 @@
+#!/usr/bin/python
+
+import os
+import sys
+import time
+import argparse
+from devlogger import devlog
+
+if __name__=="__main__":
+    parser = argparse.ArgumentParser(description='Dev Diary :-p')
+    parser.add_argument('-r', '--read', action='store_true', help='Print out the contents of the current log')
+    args = parser.parse_args();
+
+    day_str = time.strftime("%A_%b%w_%Y")
+    time_str = time.strftime("%I:%M %p")
+    folder_path = os.path.join(os.path.expanduser('~'), 'devlogs')
+
+    try:
+      os.mkdir(folder_path)
+    except:
+      pass
+    fn = '%s/%s.txt' % (folder_path, day_str)
+
+    if args.read:
+        try:
+            f = open(fn, 'r')
+            print f.read()
+        except:
+            print "No log created today :-("
+    else:
+      text = raw_input()
+      devlog(text)

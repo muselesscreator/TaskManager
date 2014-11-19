@@ -1,4 +1,13 @@
-research "single responsibility principle"
+update streams
+update stream associations in biocontrol peon
+update GBApplicationMessages.proto
+update gbtornado controllers
+update websockets
+update app connections for websocket update
+Separate biocontroller into: [HWApiController, AirPumpcontroller, ThermalController, Biocontroller]
+deactivate most manual mode nonsense
+split experiment settings, adding thermal_control.js and pressure_control.js
+update editables in thermal_control to point to desired stream
+update labels in thermal stream so that the updating "current" points to "Current(Set)"
 ==========
-make a webui sandbox
-get ctrlp working
+implement biocontrol glue
