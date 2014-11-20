@@ -1,4 +1,5 @@
-add gbtornado controller tests for BiocontrolDesiredHeat and BiocontrolToggleDesiredHeat
+add unit test in gbtornado controllers for BiocontrolToggleDesiredHeat
+add unit test in gbtornado controllers for BiocontrolDesiredHeat
 investigate addint unit test functionality to biocontroller for new functionality
 investigate adding unit test functionality for new websockets
 split experiment settings, adding thermal_control.js and pressure_control.js
