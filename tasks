@@ -88,8 +88,8 @@ class TaskManager(object):
         if self.args.d != None:
             del t_list[self.args.d]
         elif self.args.f != None:
-            devlog(t_list[self.args.f])
-            del t_list["Finished task: %s" % self.args.f]
+            devlog("Finished task: %s" % t_list[self.args.f])
+            del t_list[self.args.f]
         elif self.args.mu != None:
             t_list.insert(self.args.mu-1, t_list.pop(self.args.mu))
         elif self.args.md != None:
