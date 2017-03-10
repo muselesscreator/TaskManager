@@ -21,6 +21,7 @@ args = parser.parse_args()
 
 class TaskManager(object):
     def __init__(self, args):
+        self.line_length = 64 
         self.my_dir = '%s/Dev/TaskManager' % os.environ['HOME']
         self.args = args
         try:
@@ -42,7 +43,7 @@ class TaskManager(object):
         for l in [self.tasks['st'], self.tasks['lt']]:
             if len(l) and l[0]=='':
                 del l[0]
-        self.line_break = '='*49
+        self.line_break = '='*self.line_length
 
     def write_to_file(self, fn, text):
         f = open(fn, 'w')
@@ -137,7 +138,7 @@ class TaskManager(object):
             self.write_changes()
 
     def word_wrap(self, text):
-        max_len = 45
+        max_len = self.line_length-4 
         if len(text) > max_len:
             words = text.split(' ')
             for i in range(len(words)):
