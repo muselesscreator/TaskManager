@@ -180,7 +180,7 @@ class TaskManager(object):
             if new_slot == FIRST:
                 t_list.insert(0, t_list.pop(index))
             else:
-                t_list.insert(t_list.pop(index))
+                t_list.append(t_list.pop(index))
         self._write_changes()
 
 
