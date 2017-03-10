@@ -1,3 +1,12 @@
+Talk with Sean to determine if I need to overlay default configs on top of the machine ones
+Come up with design for Config Display EoL feature
+Pull non-bc stuff out of client_ui barcode scanner util, and separate into a client_internal_bc channel, moving the bc-only stuff to a shared channel
+Test/Verify that EoL webui page is functional (even though its empty)
+Make EoL page blocked unless in EoL mode
+Implement Auto-Align-only button feature
+Implement Remove-All-Atoms feature
+implement Configs Display feature
+implement BC Scanner EoL Channel utility
 ==========
 Create a page design for EoL including interfaces for: Run Auto-Align, BC Scanner, Remove all atoms, Config display
 Implement Phase 1 EoL page with Align, BC, remove atoms, and config display features
