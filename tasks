@@ -27,10 +27,10 @@ class TaskManager(object):
         else:
             self._prefs = None
 
-        self._active_list = None
-        self._task_file = None
-        self._st_tasks = None
-        self._lt_tasks = None
+        self._active_list = ''
+        self._task_file = ''
+        self._st_tasks = []
+        self._lt_tasks = []
         self._lists = self._get_lists()
 
         self._initialize_active_list()
@@ -60,7 +60,7 @@ class TaskManager(object):
             return ['']
         else:
             with open(fn) as fs:
-                return fs.readlines()
+                return fs.read().split('\n')
                 
     def _get_lists(self):
         return [l for l in os.listdir('%s/lists' % self._path) if l.endswith('.txt')]
@@ -70,7 +70,7 @@ class TaskManager(object):
         if os.path.isfile(self._task_file):
             tasks = filter(lambda l: l != '', self.read_from_file(self._task_file))
         else:
-            tasks = ''
+            tasks = []
         if TERM_DELIMITER in tasks:
             self._st_tasks = tasks[:tasks.index(TERM_DELIMITER)]
             self._lt_tasks = tasks[tasks.index(TERM_DELIMITER)+1:]
@@ -104,6 +104,7 @@ class TaskManager(object):
             return '= ' + text + ' '*(max_len-len(text)) + ' ='
      
     def _write_changes(self):
+        print self._st_tasks
         self._write_to_file(self._task_file,
                 '\n'.join(self._st_tasks + [TERM_DELIMITER] + self._lt_tasks))
 
@@ -151,13 +152,13 @@ class TaskManager(object):
     def prepend_task(self, lt=False):
         t_list = self._lt_tasks if lt else self._st_tasks
         print "Please type in a task to be prepended to the current list"
-        t_list.insert(0, raw_input)
+        t_list.insert(0, raw_input())
         self._write_changes()
 
     def append_task(self, lt=False):
         t_list = self._lt_tasks if lt else self._st_tasks
         print "Please type in a task to be appended to the current list"
-        t_list.append(raw_input)
+        t_list.append(raw_input())
         self._write_changes()
 
     def delete_task(self, index, lt=False):
@@ -205,23 +206,31 @@ if __name__ == '__main__':
 
     tsk_mgr = TaskManager()
 
-    if args.d != None:
-        tsk_mgr.delete_task(args.d, lt=args.lt)
-    elif args.f != None:
-        tsk_mgr.finish_task(args.f, lt=args.lt)
-    elif args.ls:
+    if args.ls:
         tsk_mgr.show_lists()
     elif args.rm != None:
         tsk_mgr.remove_list(args.m)
+    elif args.cd != None:
+        tsk_mgr.change_default(args.cd)
+        tsk_mgr.display()
+    elif args.d != None:
+        tsk_mgr.delete_task(args.d, lt=args.lt)
+        tsk_mgr.display()
+    elif args.f != None:
+        tsk_mgr.finish_task(args.f, lt=args.lt)
+        tsk_mgr.display()
     elif args.mu != None:
         tsk_mgr.move_task(args.mu, lt=args.lt, direction=UP)
+        tsk_mgr.display()
     elif args.md != None:
         tsk_mgr.move_task(args.mu, lt=args.lt, direction=DOWN)
+        tsk_mgr.display()
     elif args.m1 != None:
         tsk_mgr.move_task(args.m1, lt=args.lt, new_slot=FIRST)
+        tsk_mgr.display()
     elif args.ml != None:
         tsk_mgr.move_task(args.ml, lt=args.lt, new_slot=LAST)
-
+        tsk_mgr.display()
     elif args.a:
         tsk_mgr.append_task(lt=args.lt)
         tsk_mgr.display()
@@ -230,9 +239,6 @@ if __name__ == '__main__':
         tsk_mgr.display()
     elif args.mv != None:
         tsk_mgr.move_list(args.mv)
-        tsk_mgr.display()
-    elif args.cd != None:
-        tsk_mgr.change_default(args.cd)
         tsk_mgr.display()
     else:
         tsk_mgr.display()

@@ -15,10 +15,9 @@ if __name__=="__main__":
     time_str = time.strftime("%I:%M %p")
     folder_path = os.path.join(os.path.expanduser('~'), 'devlogs')
 
-    try:
-      os.mkdir(folder_path)
-    except:
-      pass
+    if not os.path.isdir(folder_path):
+        os.mkdir(folder_path)
+
     fn = '%s/%s.txt' % (folder_path, day_str)
 
     if args.read:

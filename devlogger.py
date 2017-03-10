@@ -10,8 +10,10 @@ def devlog(text):
     day_str = time.strftime("%A_%b%w_%Y")
     time_str = time.strftime("%I:%M %p")
     fn = '%s/%s.txt' % (folder_path, day_str)
+
     max_len = 69
     text_sections = []
+
     if len(text) <= max_len:
         text_sections = [text]
     else:
@@ -28,6 +30,9 @@ def devlog(text):
 
     if len(text_sections) > 1:
         final_text = '%s%s\n' % (final_text, '\n'.join(["%s%s" % ('           ', section) for section in text_sections[1:]]))
+
+    if not os.path.isdir(folder_path):
+        os.mk_dir(folder_path)
 
     with open(fn, 'a') as f:
        f.write(final_text)
