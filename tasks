@@ -104,7 +104,6 @@ class TaskManager(object):
             return '= ' + text + ' '*(max_len-len(text)) + ' ='
      
     def _write_changes(self):
-        print self._st_tasks
         self._write_to_file(self._task_file,
                 '\n'.join(self._st_tasks + [TERM_DELIMITER] + self._lt_tasks))
 
