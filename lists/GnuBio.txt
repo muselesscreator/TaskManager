@@ -1,8 +1,4 @@
-add unit test in gbtornado controllers for BiocontrolToggleDesiredHeat
-add unit test in gbtornado controllers for BiocontrolDesiredHeat
-investigate addint unit test functionality to biocontroller for new functionality
-investigate adding unit test functionality for new websockets
-split experiment settings, adding thermal_control.js and pressure_control.js
-update editables in thermal_control to point to desired stream
-update labels in thermal stream so that the updating "current" points to "Current(Set)"
 ==========
+Create a page design for EoL including interfaces for: Run Auto-Align, BC Scanner, Remove all atoms, Config display
+Implement Phase 1 EoL page with Align, BC, remove atoms, and config display features
+Attempt to recreate zombie messages
