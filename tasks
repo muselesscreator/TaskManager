@@ -3,187 +3,237 @@ import os
 import argparse
 from devlogger import devlog
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-a", "--append", help="add a task to the end of the list", dest='a', action='store_true')
-parser.add_argument("-p", "--prepend", help="add a task to the beginning of the list", dest='p', action='store_true')
-parser.add_argument("-d", "--delete", help="delete the task at the given index", dest='d', type=int)
-parser.add_argument("-mu", "--moveup", help="move the selected task up in priority", dest='mu', type=int)
-parser.add_argument("-md", "--movedown", help="move the selected task down in priority", dest='md', type=int)
-parser.add_argument("-m1", "--promote", help="promote the selected task to top priority", dest='m1', type=int)
-parser.add_argument("-ml", "--demote", help="demote the selected task to bottom priority", dest='ml', type=int)
-parser.add_argument("-lt", "--longterm", help="affect long-term tasks", dest='lt', action="store_true")
-parser.add_argument("-cd", "--change-list", help="Change lists", dest = 'cd')
-parser.add_argument("-rm", "--delete-list", help="Delete a list", dest = 'rm')
-parser.add_argument("-ls", "--list-lists", help="lists the ... lists", dest = 'ls', action="store_true")
-parser.add_argument("-mv", "--rename-list", help="rename the list", dest = 'mv')
-parser.add_argument("-f", "--finish", help="finish/log the task", dest='f', type=int)
-args = parser.parse_args()
+
+
+HOME_DIR = '%s/Dev/TaskManager' % os.environ['HOME']
+PREFS_PATH = '%s/prefs.txt' % HOME_DIR
+LINE_LENGTH = 64
+LINE_BREAK = '=' * LINE_LENGTH
+TERM_DELIMITER = '=' * 10
+FIRST = 'first'
+LAST = 'last'
+UP = -1
+DOWN = 1
+
 
 class TaskManager(object):
-    def __init__(self, args):
+    def __init__(self):
         self.line_length = 64 
-        self.my_dir = '%s/Dev/TaskManager' % os.environ['HOME']
-        self.args = args
-        try:
-            self.main_list = open('%s/prefs.txt' % self.my_dir).read()
-        except:
-            lists = self.get_lists()
-            if len(lists):
-                self.main_list = lists[0]
-                f = open('%s/prefs.txt' % my_dir, 'w')
-                f.write(lists[0])
-            else:
-                self.main_list = 'new_list'
-                f = open('%s/lists/new_list.txt', 'w')
-                f.write('new_list.txt')
+        self._path = HOME_DIR
 
-        self.task_file = '%s/lists/%s' % (self.my_dir, self.main_list)
-        self.tasks = {}
-        self.get_tasks()
-        for l in [self.tasks['st'], self.tasks['lt']]:
-            if len(l) and l[0]=='':
-                del l[0]
-        self.line_break = '='*self.line_length
+        if os.path.isfile(PREFS_PATH):
+            with open(PREFS_PATH) as fs:
+                self._prefs = fs.readlines()
+        else:
+            self._prefs = None
 
-    def write_to_file(self, fn, text):
+        self._active_list = None
+        self._task_file = None
+        self._st_tasks = None
+        self._lt_tasks = None
+        self._lists = self._get_lists()
+
+        self._initialize_active_list()
+
+    @property
+    def st_tasks(self):
+        return self._st_tasks
+    @property
+    def lt_tasks(self):
+        return self.lt_tasks
+
+    def _initialize_active_list(self):
+        if self._prefs is not None:
+            self._active_list = self._prefs[0]
+            self._load_list()
+        else:
+            active_list = self._lists[0] if len(self._lists) else 'new_list'
+            self.change_default(active_list)
+
+    def _write_to_file(self, fn, text):
         f = open(fn, 'w')
         f.write(text)
 
     def read_from_file(self, fn):
-            try:
-                f = open(fn).read().split('\n')
-                return f
-            except:
-                print "read failed!"
-                f = open(fn, 'w')
+        if not os.path.isfile(fn):
+            print "Warning: read of %s failed" % fn
             return ['']
-                
-    def get_lists(self):
-        return [l for l in os.listdir('%s/lists' % self.my_dir) if l.endswith('.txt')]
-
-    def get_tasks(self):
-        tasks = self.read_from_file(self.task_file)
-        if '='*10 in tasks:
-            self.tasks['st'] = tasks[:tasks.index('='*10)]
-            self.tasks['lt'] = tasks[tasks.index('='*10)+1:]
         else:
-            self.tasks['st'] = tasks
-            self.tasks['lt'] = [] 
-        if '' in self.tasks['st']:
-            self.tasks['st'].remove('')
-        if '' in self.tasks['lt']:
-            self.tasks['lt'].remove('')
+            with open(fn) as fs:
+                return fs.readlines()
+                
+    def _get_lists(self):
+        return [l for l in os.listdir('%s/lists' % self._path) if l.endswith('.txt')]
+
+    def _load_list(self):
+        self._task_file = '%s/lists/%s' % (self._path, self._active_list)
+        if os.path.isfile(self._task_file):
+            tasks = filter(lambda l: l != '', self.read_from_file(self._task_file))
+        else:
+            tasks = ''
+        if TERM_DELIMITER in tasks:
+            self._st_tasks = tasks[:tasks.index(TERM_DELIMITER)]
+            self._lt_tasks = tasks[tasks.index(TERM_DELIMITER)+1:]
+        else:
+            self._st_tasks = tasks
+            self._lt_tasks = [] 
 
     def change_default(self, new):
-        f = open('%s/prefs.txt' % self.my_dir, 'w')
-        f.write('%s.txt' % new)
-        self.task_file = '%s/lists/%s.txt' % (self.my_dir, new)    
-        self.get_tasks()
-
-    def parse_args(self):
-        if self.args.lt:
-            t_list = self.tasks['lt']
-        else:
-            t_list = self.tasks['st']
-
-        if self.args.d != None:
-            del t_list[self.args.d]
-        elif self.args.f != None:
-            devlog("Finished task: %s" % t_list[self.args.f])
-            del t_list[self.args.f]
-        elif self.args.mu != None:
-            t_list.insert(self.args.mu-1, t_list.pop(self.args.mu))
-        elif self.args.md != None:
-            t_list.insert(self.args.md+1, t_list.pop(self.args.md))  
-        elif self.args.a:
-            t_list.append(raw_input())
-        elif self.args.p:
-            t_list.insert(0, raw_input())
-        elif self.args.m1 != None:
-            t_list.insert(0, t_list.pop(self.args.m1))
-        elif self.args.ml != None:
-            t_list.append(t_list.pop(self.args.ml))
-
-        elif self.args.mv != None:
-            lists = self.get_lists()
-            if "%s.txt" % self.args.mv in lists:
-                resp = raw_input("A file with that name exists." +
-                             "Would you like to replace it? (y/N)")
-                if resp == 'y':
-                    os.rename(task_file, '%s/lists/%s.txt' % (self.my_dir, self.args.mv))
-                    self.change_default(self.args.mv)
-            else:
-                os.rename(task_file, '%s/lists/%s.txt' % (self.my_dir, self.args.mv))
-                self.change_default(self.args.mv)
-        elif self.args.rm != None:
-            resp = raw_input("Are you sure you want to delete the %s list? (y/N)" % self.args.rm)
-            if resp == 'y':
-                os.remove('%s/lists/%s.txt' % (self.my_dir, self.args.rm))
-        elif self.args.cd != None:
-            self.change_default(self.args.cd)
-        elif self.args.ls:
-            lists = self.get_lists()
-            print "="*30
-            print "= Available Lists:"
-            print "="*30
-            for l in lists:
-                print ' = * %s' % l[:-4]
-            print "="*30
-            return 0
-        if self.args.lt:
-            self.tasks['lt'] = t_list
-        else:
-            self.tasks['st'] = t_list
-        if self.args.rm == None:
-            self.write_changes()
+        self._active_list = new
+        self._write_to_file(PREFS_PATH, self._active_list)
+        self._load_list()
 
     def word_wrap(self, text):
-        max_len = self.line_length-4 
+        border = 2
+        text = text.rstrip()
+        max_len = self.line_length - (border * 2)
         if len(text) > max_len:
             words = text.split(' ')
-            for i in range(len(words)):
-                if len(' '.join(words[:i+1])) > max_len:
-                    ind = i
-                    break
+            try:
+                ind = next(i for (i,v) in enumerate(words)
+                        if len(' '.join(words[:i+1])) > max_len)
+            except Exception, e:
+                raise(e)
 
-            line1 = ' '.join(words[:ind])
-            line1 = '= ' + line1 + ' '*(max_len - len(line1)) + ' ='
-            line2 = self.word_wrap(' '*5+' '.join(words[ind:]))
+            line = ' '.join(words[:ind])
+
+            line1 = '= %s%s =' % (' '.join(words[:ind]), ' '*(max_len-len(line)))
+            line2 = self.word_wrap(' '*(2*border+1) + ' '.join(words[ind:]))
             return '%s\n%s' % (line1, line2)
         else:
             return '= ' + text + ' '*(max_len-len(text)) + ' ='
      
-    def write_changes(self):
-        f = open(self.task_file, 'w')
-        f.write('\n'.join(self.tasks['st'] + ['='*10] + self.tasks['lt']))
-        max_len = 30
-        print self.line_break
-        print 'List: %s' % self.main_list[:-4]
-        print self.line_break
+    def _write_changes(self):
+        self._write_to_file(self._task_file,
+                '\n'.join(self._st_tasks + [TERM_DELIMITER] + self._lt_tasks))
+
+    def display(self):
+        print LINE_BREAK
+        print 'List: %s' % self._active_list[:-4]
+        print LINE_BREAK
+
         print "Short-Term Tasks"
-        print self.line_break
-        for i in range(len(self.tasks['st'])):
-            task = self.tasks['st'][i]
-            if len(task) > max_len:
-                words = task.split(' ')
-                for j in range(len(words)):
-                    if ' '.join(words[:j+1])>max_len:
-                        ind = j
-                        break
-            print self.word_wrap("%s:   %s" % (i, self.tasks['st'][i]))
-        print self.line_break
+        print LINE_BREAK
+        for i in range(len(self._st_tasks)):
+            print self.word_wrap("%s:   %s" % (i, self._st_tasks[i]))
+        print LINE_BREAK
+
         print "Long-Term Tasks"
-        print self.line_break
-        for i in range(len(self.tasks['lt'])):
-            task = self.tasks['lt'][i]
-            if len(task) > max_len:
-                words = task.split(' ')
-                for j in range(len(words)):
-                    if ' '.join(words[:j+1])>max_len:
-                        ind = j
-                        break
-            print self.word_wrap("%s:   %s" % (i, self.tasks['lt'][i]))
-        print self.line_break
+        print LINE_BREAK
+        for i in range(len(self._lt_tasks)):
+            print self.word_wrap("%s:   %s" % (i, self._lt_tasks[i]))
+        print LINE_BREAK
+
+    def move_list(self, new_name):
+        if "%s.txt" % new_name in self._lists:
+            resp = raw_input("A file with that name exists." +
+                         "Would you like to replace it? (y/N)")
+            if resp != 'y':
+                return
+            os.rename(self._task_file, '%s/lists/%s.txt' % (self._path, args.mv))
+        else:
+            os.rename(self._task_file, '%s/lists/%s.txt' % (self._path, args.mv))
+        self.change_default(args.mv)
+
+    def remove_list(self, name):
+        resp = raw_input("Are you sure you want to delete the %s list? (y/N)" % name)
+        if resp == 'y':
+            os.remove('%s/lists/%s.txt' % (self._path, name))
+
+    def show_lists(self):
+        print "="*30
+        print "= Available Lists:"
+        print "="*30
+        for l in self._lists:
+            print ' = * %s' % l[:-4]
+        print "="*30
+
+    def prepend_task(self, lt=False):
+        t_list = self._lt_tasks if lt else self._st_tasks
+        print "Please type in a task to be prepended to the current list"
+        t_list.insert(0, raw_input)
+        self._write_changes()
+
+    def append_task(self, lt=False):
+        t_list = self._lt_tasks if lt else self._st_tasks
+        print "Please type in a task to be appended to the current list"
+        t_list.append(raw_input)
+        self._write_changes()
+
+    def delete_task(self, index, lt=False):
+        if lt:
+            del self._lt_tasks[index]
+        else:
+            del self._st_tasks[index]
+        self._write_changes()
+
+    def finish_task(self, index, lt=False):
+        t_list = self._lt_tasks if lt else self._st_tasks
+        devlog("Finished task: %s" % t_list[args.f])
+        self.delete_task(index, lt=lt)
+
+    def move_task(self, index, lt=False, new_slot=None, direction=None):
+        t_list = self._lt_tasks if lt else self._st_tasks
+        if direction is not None:
+            t_list.insert(index+direction, t_list.pop(index))
+        elif new_slot is not None:
+            if new_slot == FIRST:
+                t_list.insert(0, t_list.pop(index))
+            else:
+                t_list.insert(t_list.pop(index))
+        self._write_changes()
+
+
+
 if __name__ == '__main__':
-    tsk_mgr = TaskManager(args)
-    tsk_mgr.parse_args()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-a", "--append", help="add a task to the end of the list", dest='a', action='store_true')
+    parser.add_argument("-p", "--prepend", help="add a task to the beginning of the list", dest='p', action='store_true')
+    parser.add_argument("-d", "--delete", help="delete the task at the given index", dest='d', type=int)
+    parser.add_argument("-mu", "--moveup", help="move the selected task up in priority", dest='mu', type=int)
+    parser.add_argument("-md", "--movedown", help="move the selected task down in priority", dest='md', type=int)
+    parser.add_argument("-m1", "--promote", help="promote the selected task to top priority", dest='m1', type=int)
+    parser.add_argument("-ml", "--demote", help="demote the selected task to bottom priority", dest='ml', type=int)
+    parser.add_argument("-lt", "--longterm", help="affect long-term tasks", dest='lt', action="store_true")
+    parser.add_argument("-cd", "--change-list", help="Change lists", dest = 'cd')
+    parser.add_argument("-rm", "--delete-list", help="Delete a list", dest = 'rm')
+    parser.add_argument("-ls", "--list-lists", help="lists the ... lists", dest = 'ls', action="store_true")
+    parser.add_argument("-mv", "--rename-list", help="rename the list", dest = 'mv')
+    parser.add_argument("-f", "--finish", help="finish/log the task", dest='f', type=int)
+    args = parser.parse_args()
+
+    tsk_mgr = TaskManager()
+
+    if args.d != None:
+        tsk_mgr.delete_task(args.d, lt=args.lt)
+    elif args.f != None:
+        tsk_mgr.finish_task(args.f, lt=args.lt)
+    elif args.ls:
+        tsk_mgr.show_lists()
+    elif args.rm != None:
+        tsk_mgr.remove_list(args.m)
+    elif args.mu != None:
+        tsk_mgr.move_task(args.mu, lt=args.lt, direction=UP)
+    elif args.md != None:
+        tsk_mgr.move_task(args.mu, lt=args.lt, direction=DOWN)
+    elif args.m1 != None:
+        tsk_mgr.move_task(args.m1, lt=args.lt, new_slot=FIRST)
+    elif args.ml != None:
+        tsk_mgr.move_task(args.ml, lt=args.lt, new_slot=LAST)
+
+    elif args.a:
+        tsk_mgr.append_task(lt=args.lt)
+        tsk_mgr.display()
+    elif args.p:
+        tsk_mgr.prepend_task(lt=args.lt)
+        tsk_mgr.display()
+    elif args.mv != None:
+        tsk_mgr.move_list(args.mv)
+        tsk_mgr.display()
+    elif args.cd != None:
+        tsk_mgr.change_default(args.cd)
+        tsk_mgr.display()
+    else:
+        tsk_mgr.display()
+
