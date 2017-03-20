@@ -222,7 +222,7 @@ if __name__ == '__main__':
         tsk_mgr.move_task(args.mu, lt=args.lt, direction=UP)
         tsk_mgr.display()
     elif args.md != None:
-        tsk_mgr.move_task(args.mu, lt=args.lt, direction=DOWN)
+        tsk_mgr.move_task(args.md, lt=args.lt, direction=DOWN)
         tsk_mgr.display()
     elif args.m1 != None:
         tsk_mgr.move_task(args.m1, lt=args.lt, new_slot=FIRST)
