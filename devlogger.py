@@ -7,7 +7,7 @@ import argparse
 
 def devlog(text):
     folder_path = os.path.join(os.path.expanduser('~'), 'devlogs')
-    day_str = time.strftime("%A_%b%w_%Y")
+    day_str = time.strftime("%A_%b%d_%Y")
     time_str = time.strftime("%I:%M %p")
     fn = '%s/%s.txt' % (folder_path, day_str)
 

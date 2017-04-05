@@ -1,18 +1,40 @@
 #!/usr/bin/python
 
+from datetime import datetime
 import os
 import sys
 import time
 import argparse
 from devlogger import devlog
 
+FMT_STRING = "%A_%b%d_%Y"
+
+DELIMITER = '=' * 40
+
+def read_file(folder_path, file_path):
+    path = os.path.join(folder_path, file_path)
+    try:
+        with open(path, 'r') as f:
+            print DELIMITER
+            print file_path[:-4]
+            print DELIMITER
+            print f.read()
+    except:
+        print "Cannot read devlog %s" % path
+
+def get_datetime(fn):
+    return datetime.strptime(fn, FMT_STRING)
+
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Dev Diary :-p')
-    parser.add_argument('-r', '--read', action='store_true', help='Print out the contents of the current log')
+    parser.add_argument('-r', '--read', dest='r', action='store_true', help='Print out the contents of the current log')
+    parser.add_argument('-R', '--read-all', dest='R', action='store_true', help='Print out the contents of all logs')
+    parser.add_argument('-n', '--read-n', dest='n', type=int, help='Read logs from the last <n> days') 
     args = parser.parse_args();
 
-    day_str = time.strftime("%A_%b%w_%Y")
-    time_str = time.strftime("%I:%M %p")
+    day_str = time.strftime(FMT_STRING)
+
     folder_path = os.path.join(os.path.expanduser('~'), 'devlogs')
 
     if not os.path.isdir(folder_path):
@@ -20,12 +42,16 @@ if __name__=="__main__":
 
     fn = '%s/%s.txt' % (folder_path, day_str)
 
-    if args.read:
-        try:
-            f = open(fn, 'r')
-            print f.read()
-        except:
-            print "No log created today :-("
+    if args.r:
+        read_file(folder_path, '%s.txt' % day_str)
+    elif args.R or args.n:
+        logs = [{'fn': log, 'datetime': get_datetime(log[:-4])}
+            for log in os.listdir(folder_path)]
+        if args.n:
+            logs = [log for log in logs if (datetime.now() - log['datetime']).days <= args.n]
+        logs = sorted(logs, key=lambda l: l['datetime'])
+        for log in logs:
+            read_file(folder_path, log['fn'])
     else:
       text = raw_input()
       devlog(text)
