@@ -1,14 +1,17 @@
-Verify webui_js_refactor_2 pr passes all necessary tests
-read 2 chapters of About Face
-Implement Remove-All-Atoms feature
-Implement a "restart in manual mode" button in the "reset experiment" section of EoL tools
-Pull non-bc stuff out of client_ui barcode scanner util, and separate into a client_internal_bc channel, moving the bc-only stuff to a shared channel
-implement BC Scanner EoL Channel utility
-Get Sean's buy-in on config display feature
-Implement Auto-Align-only button feature
+Implement base Electrode config UX
+Implement wireframe auto-align config editor
+Make a test entry for heater config with new UX
+Figure out what it will take to get EoL 1 merged in
+Write an email to PlanetInnovation guy about LIS
+Log all interactions in EoL page
 ==========
-Create a page design for EoL including interfaces for: Run Auto-Align, BC Scanner, Remove all atoms, Config display
-Implement Phase 1 EoL page with Align, BC, remove atoms, and config display features
-Attempt to recreate zombie messages
+look into python file-change tracking systems
+EoL page phase 2
+==========
+Keep an eye on JS Refactor PR
+==========
+Provide better zoom options on Exp Page
+Why is the webui restarting when viewing the analysis page identity_stats block
+add notes to reset features in eol page
 Merge HDF5 saver and Image Stack saver in sidebar
 Move Drop Image Metrics to... Analysis, I guess?
