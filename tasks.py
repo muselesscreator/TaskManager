@@ -75,33 +75,30 @@ class TaskManager(object):
         f.write(text)
 
     def read_from_file(self, fn):
-        if not os.path.isfile(fn):
-            print "Warning: read of %s failed" % fn
-            return ['']
-        else:
-            with open(fn) as fs:
-                return fs.read().split('\n')
-                
-    def _get_lists(self):
-        return [l for l in os.listdir('%s/lists' % self._path) if l.endswith('.txt')]
-
-    def _load_list(self):
-        self._task_file = '%s/lists/%s' % (self._path, self._active_list)
-        if os.path.isfile(self._task_file):
-            tasks = filter(lambda l: l != '', self.read_from_file(self._task_file))
-        else:
-            tasks = []
-
+        tasks = []
+        task_types = {}
         targets = [SHORTTERM, LONGTERM, WAIT, BACKLOG]
         for target in targets:
-            self._task_lists[target] = []
+            task_types[target] = []
+        if os.path.isfile(fn):
+            with open(fn) as fs:
+                tasks =  filter(lambda l: l != '', fs.read().split('\n'))
 
         target_index = 0 
         for task in tasks:
             if task == TERM_DELIMITER:
                 target_index += 1
                 continue
-            self._task_lists[targets[target_index]].append(task)
+            task_types[targets[target_index]].append(task)
+        return task_types
+
+                
+    def _get_lists(self):
+        return [l for l in os.listdir('%s/lists' % self._path) if l.endswith('.txt')]
+
+    def _load_list(self):
+        self._task_file = '%s/lists/%s' % (self._path, self._active_list)
+        self._task_lists = self.read_from_file(self._task_file)
 
     def set_mode(self, mode):
         self._mode = mode
@@ -159,10 +156,10 @@ class TaskManager(object):
                          "Would you like to replace it? (y/N)")
             if resp != 'y':
                 return
-            os.rename(self._task_file, '%s/lists/%s.txt' % (self._path, args.mv))
+            os.rename(self._task_file, '%s/lists/%s.txt' % (self._path, new_name))
         else:
-            os.rename(self._task_file, '%s/lists/%s.txt' % (self._path, args.mv))
-        self.change_default(args.mv)
+            os.rename(self._task_file, '%s/lists/%s.txt' % (self._path, new_name))
+        self.change_default(new_name)
 
     def remove_list(self, name):
         resp = raw_input("Are you sure you want to delete the %s list? (y/N)" % name)
@@ -192,7 +189,7 @@ class TaskManager(object):
         self._write_changes()
 
     def finish_task(self, index):
-        devlog("Finished task: %s" % self.selected_list[args.f])
+        devlog("Finished task: %s" % self.selected_list[index])
         self.delete_task(index)
 
     def move_task(self, index, new_slot=None, direction=None):
@@ -219,75 +216,3 @@ class TaskManager(object):
         else:
             print "Cancelling"
         self._write_changes()
-
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-lt", "--longterm", help="Modify long-term tasks", dest='lt', action="store_true")
-    parser.add_argument("-w", "--wait", help="Modify Wait/Watcher tasks list", dest='w', action='store_true')
-    parser.add_argument('-bl', '--backlog', help="Modify Backlog tasks list", dest='bl', action='store_true')
-    parser.add_argument("-a", "--append", help="add a task to the end of the list", dest='a', action='store_true')
-    parser.add_argument("-p", "--prepend", help="add a task to the beginning of the list", dest='p', action='store_true')
-    parser.add_argument("-d", "--delete", help="delete the task at the given index", dest='d', type=int)
-    parser.add_argument("-ct", "--changetype", help="change task at given index to new task type", dest='ct', type=int)
-    parser.add_argument("-mu", "--moveup", help="move the selected task up in priority", dest='mu', type=int)
-    parser.add_argument("-md", "--movedown", help="move the selected task down in priority", dest='md', type=int)
-    parser.add_argument("-m1", "--promote", help="promote the selected task to top priority", dest='m1', type=int)
-    parser.add_argument("-ml", "--demote", help="demote the selected task to bottom priority", dest='ml', type=int)
-    parser.add_argument("-cd", "--change-list", help="Change lists", dest = 'cd')
-    parser.add_argument("-rm", "--delete-list", help="Delete a list", dest = 'rm')
-    parser.add_argument("-ls", "--list-lists", help="lists the ... lists", dest = 'ls', action="store_true")
-    parser.add_argument("-mv", "--rename-list", help="rename the list", dest = 'mv')
-    parser.add_argument("-f", "--finish", help="finish/log the task", dest='f', type=int)
-    args = parser.parse_args()
-
-    tsk_mgr = TaskManager()
-
-
-    if args.lt:
-        tsk_mgr.set_mode(LONGTERM)
-    elif args.w:
-        tsk_mgr.set_mode(WAIT)
-    elif args.bl:
-        tsk_mgr.set_mode(BACKLOG)
-
-    if args.ls:
-        tsk_mgr.show_lists()
-    elif args.rm != None:
-        tsk_mgr.remove_list(args.m)
-    elif args.cd != None:
-        tsk_mgr.change_default(args.cd)
-        tsk_mgr.display()
-    elif args.d != None:
-        tsk_mgr.delete_task(args.d)
-        tsk_mgr.display()
-    elif args.f != None:
-        tsk_mgr.finish_task(args.f)
-        tsk_mgr.display()
-    elif args.ct != None:
-        tsk_mgr.change_type(args.ct)
-        tsk_mgr.display()
-    elif args.mu != None:
-        tsk_mgr.move_task(args.mu, direction=UP)
-        tsk_mgr.display()
-    elif args.md != None:
-        tsk_mgr.move_task(args.md, direction=DOWN)
-        tsk_mgr.display()
-    elif args.m1 != None:
-        tsk_mgr.move_task(args.m1, new_slot=FIRST)
-        tsk_mgr.display()
-    elif args.ml != None:
-        tsk_mgr.move_task(args.ml, new_slot=LAST)
-        tsk_mgr.display()
-    elif args.a:
-        tsk_mgr.append_task()
-        tsk_mgr.display()
-    elif args.p:
-        tsk_mgr.prepend_task()
-        tsk_mgr.display()
-    elif args.mv != None:
-        tsk_mgr.move_list(args.mv)
-        tsk_mgr.display()
-    else:
-        tsk_mgr.display()
