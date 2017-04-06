@@ -8,6 +8,8 @@ Log all interactions in EoL page
 look into python file-change tracking systems
 EoL page phase 2
 ==========
+Wait for new mockup from PI to review and forward to Lisa
+Wait for response from Lisa on mockup meeting questions
 Keep an eye on JS Refactor PR
 ==========
 Provide better zoom options on Exp Page
