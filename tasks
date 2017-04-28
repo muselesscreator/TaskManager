@@ -2,7 +2,7 @@
 import os
 import argparse
 from devlogger import devlog
-from tasks import TaskManager
+from tasks import TaskManager, WAIT, BACKLOG, LONGTERM, FIRST, LAST, UP, DOWN
 
 if __name__ == '__main__':
 
