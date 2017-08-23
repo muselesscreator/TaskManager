@@ -11,6 +11,7 @@ if __name__ == '__main__':
     parser.add_argument("-w", "--wait", help="Modify Wait/Watcher tasks list", dest='w', action='store_true')
     parser.add_argument('-bl', '--backlog', help="Modify Backlog tasks list", dest='bl', action='store_true')
     parser.add_argument("-a", "--append", help="add a task to the end of the list", dest='a', action='store_true')
+    parser.add_argument("-A", "--all", help="View All Tasks for active list", dest='A', action='store_true')
     parser.add_argument("-p", "--prepend", help="add a task to the beginning of the list", dest='p', action='store_true')
     parser.add_argument("-d", "--delete", help="delete the task at the given index", dest='d', type=int)
     parser.add_argument("-ct", "--changetype", help="change task at given index to new task type", dest='ct', type=int)
@@ -37,6 +38,8 @@ if __name__ == '__main__':
 
     if args.ls:
         tsk_mgr.show_lists()
+    elif args.A:
+        tsk_mgr.display(st_only=False)
     elif args.rm != None:
         tsk_mgr.remove_list(args.m)
     elif args.cd != None:

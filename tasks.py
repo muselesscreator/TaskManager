@@ -115,7 +115,7 @@ class TaskManager(object):
         if len(text) > max_len:
             words = text.split(' ')
             try:
-                ind = next(i for (i,v) in enumerate(words)
+                ind = next(i for (i, v) in enumerate(words)
                         if len(' '.join(words[:i+1])) > max_len)
             except Exception, e:
                 raise(e)
@@ -135,15 +135,19 @@ class TaskManager(object):
                           self.wait_tasks + [TERM_DELIMITER] +
                           self.backlog_tasks))
 
-    def display(self):
+    def display(self, st_only=True):
         print LINE_BREAK
         print 'List: %s' % self._active_list[:-4]
         print LINE_BREAK
 
-        for l in [{'name': 'Short-Term', 'list': self.st_tasks},
-                  {'name': 'Wait/Watch', 'list': self.wait_tasks},
-                  {'name': 'Long-Term', 'list': self.lt_tasks},
-                  {'name': 'Backlog', 'list': self.backlog_tasks}]:
+        lists = [{'name': 'Short-Term', 'list': self.st_tasks}]
+
+        if not st_only:
+            lists += [{'name': 'Wait/Watch', 'list': self.wait_tasks},
+                      {'name': 'Long-Term', 'list': self.lt_tasks},
+                      {'name': 'Backlog', 'list': self.backlog_tasks}]
+
+        for l in lists:
             print "%s Tasks" % l['name']
             print LINE_BREAK
             for i in range(len(l['list'])):
