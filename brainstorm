@@ -1,0 +1,53 @@
+#!/usr/bin/python
+
+import argparse, datetime, os
+
+HOME_DIR = os.path.join(os.path.expanduser('~'), 'brainstorms')
+FN_FORMAT = 'brainstorm_%s.txt'
+
+class BrainstormManager(object):
+    def __init__(self):
+        self.date = None;
+        if not os.path.isdir(HOME_DIR):
+            os.mkdir(HOME_DIR)
+
+    def create_or_open(self):
+        date = datetime.datetime.today().strftime('%m_%d_%Y')
+        self.open(date)
+
+    def read(self):
+        dates = [datetime.datetime.strptime(f, 'brainstorm_%m_%d_%Y.txt').date()
+                 for f in os.listdir(HOME_DIR)
+                 if not f.startswith('.')]
+        dates.sort(reverse=True)
+        today = datetime.datetime.today().date()
+        if today in dates:
+            dates.remove(today)
+
+        for i, date in enumerate(dates):
+            print '%s: %s' % (i+1, date.strftime('%a %b %d, %Y'))
+        print ""
+
+        resp = raw_input("Which file would you like to open? ")
+        
+        try:
+            if resp == "":
+                self.open(dates[0].strftime('%m_%d_%Y'))
+            elif int(resp) - 1 < len(dates):
+                self.open(dates[int(resp)-1].strftime('%m_%d_%Y'))
+        except Exception as e:
+            print "invalid entry '%s'" % resp
+
+    def open(self, fn):
+        os.system('vim %s/brainstorm_%s.txt' % (HOME_DIR, fn))
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Brainstorm Manager")
+    parser.add_argument('-p', '--previous', dest='p', action='store_true', help='Open the previous log')
+    args = parser.parse_args()
+
+    bs = BrainstormManager()
+    if args.p:
+        bs.read()
+    else:
+        bs.create_or_open()
