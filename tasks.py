@@ -5,6 +5,8 @@ from devlogger import devlog
 
 HOME_DIR = '%s/Dev/TaskManager' % os.environ['HOME']
 PREFS_PATH = '%s/prefs.txt' % HOME_DIR
+NAME = 'name'
+LIST = 'list'
 LINE_LENGTH = 64
 LINE_BREAK = '=' * LINE_LENGTH
 TERM_DELIMITER = '=' * 10
@@ -135,24 +137,30 @@ class TaskManager(object):
                           self.wait_tasks + [TERM_DELIMITER] +
                           self.backlog_tasks))
 
+    @property
+    def lists(self):
+        return {SHORTTERM: {NAME: 'Short-Term', LIST: self.st_tasks},
+                LONGTERM: {NAME: 'Long-Term', LIST: self.lt_tasks},
+                BACKLOG: {NAME: 'Backlog', LIST: self.backlog_tasks},
+                WAIT: {NAME: 'Wait/Watch', LIST: self.wait_tasks}};
+
     def display(self, st_only=True):
         print LINE_BREAK
         print 'List: %s' % self._active_list[:-4]
         print LINE_BREAK
 
-        lists = [{'name': 'Short-Term', 'list': self.st_tasks}]
+        def display_list(task_list):
+            print "%s Tasks" % task_list[NAME]
+            print LINE_BREAK
+            for i in range(len(task_list[LIST])):
+                print self.word_wrap("%s:   %s" % (i, task_list[LIST][i]))
+            print LINE_BREAK
 
         if not st_only:
-            lists += [{'name': 'Wait/Watch', 'list': self.wait_tasks},
-                      {'name': 'Long-Term', 'list': self.lt_tasks},
-                      {'name': 'Backlog', 'list': self.backlog_tasks}]
-
-        for l in lists:
-            print "%s Tasks" % l['name']
-            print LINE_BREAK
-            for i in range(len(l['list'])):
-                print self.word_wrap("%s:   %s" % (i, l['list'][i]))
-            print LINE_BREAK
+            for mode in self.lists:
+                display_list(self.lists[mode])
+        else:
+            display_list(self.lists[self._mode])
 
     def move_list(self, new_name):
         if "%s.txt" % new_name in self._lists:
@@ -189,12 +197,20 @@ class TaskManager(object):
         self._write_changes()
 
     def delete_task(self, index):
+        resp = raw_input("Delete Tasks (y/N):\n%s\n" % self.selected_list[index])
+        if resp.lower() == 'y':
+            self._delete_task(index)
+
+    def _delete_task(self, index):
         del self.selected_list[index]
         self._write_changes()
 
+
     def finish_task(self, index):
-        devlog("Finished task: %s" % self.selected_list[index])
-        self.delete_task(index)
+        resp = raw_input("Finish Tasks (y/N):\n%s\n" % self.selected_list[index])
+        if resp.lower() == 'y':
+            devlog("Finished task: %s" % self.selected_list[index])
+            self._delete_task(index)
 
     def move_task(self, index, new_slot=None, direction=None):
         if direction is not None:
