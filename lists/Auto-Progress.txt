@@ -1,6 +1,0 @@
-FullChip/DetectionOnly show confDialog on expd
-Replay forces chip_placed on expd
-Replay provides drops_visible on aligned
-mcpStatus watcher launches progressDialog on auto-tool progress message if myPage=='experiment'
-==========
-Auto progress

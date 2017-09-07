@@ -7,6 +7,7 @@ HOME_DIR = '%s/Dev/TaskManager' % os.environ['HOME']
 PREFS_PATH = '%s/prefs.txt' % HOME_DIR
 NAME = 'name'
 LIST = 'list'
+TXT_EXT = '.txt'
 LINE_LENGTH = 64
 LINE_BREAK = '=' * LINE_LENGTH
 TERM_DELIMITER = '=' * 10
@@ -106,6 +107,8 @@ class TaskManager(object):
         self._mode = mode
 
     def change_default(self, new):
+        if not new.endswith(TXT_EXT):
+            new += TXT_EXT
         self._active_list = new
         self._write_to_file(PREFS_PATH, self._active_list)
         self._load_list()
@@ -197,20 +200,29 @@ class TaskManager(object):
         self._write_changes()
 
     def delete_task(self, index):
-        resp = raw_input("Delete Tasks (y/N):\n%s\n" % self.selected_list[index])
+        print LINE_BREAK
+        print self.word_wrap("%s:   %s" % (index, self.selected_list[index]))
+        print LINE_BREAK
+        resp = raw_input("= Delete Tasks (y/N): ")
         if resp.lower() == 'y':
             self._delete_task(index)
+        print LINE_BREAK
+        print '\n'
 
     def _delete_task(self, index):
         del self.selected_list[index]
         self._write_changes()
 
-
     def finish_task(self, index):
-        resp = raw_input("Finish Tasks (y/N):\n%s\n" % self.selected_list[index])
+        print LINE_BREAK
+        print self.word_wrap("%s:   %s" % (index, self.selected_list[index]))
+        print LINE_BREAK
+        resp = raw_input("= Finish Tasks (y/N): ")
         if resp.lower() == 'y':
             devlog("Finished task: %s" % self.selected_list[index])
             self._delete_task(index)
+        print LINE_BREAK
+        print '\n'
 
     def move_task(self, index, new_slot=None, direction=None):
         if direction is not None:
@@ -231,8 +243,21 @@ class TaskManager(object):
             print "  %s: %s" % (i+1, target)
         resp = raw_input("Enter new type (1-4) or leave blank to cancel:  ")
         if int(resp) in [1, 2, 3, 4]:
-            self.delete_task(index)
-            self._task_lists[targets[int(resp)-1]].append(task)
+            self._change_type(index, targets[int(resp)-1])
         else:
             print "Cancelling"
         self._write_changes()
+
+    def _change_type(self, index, new_list):
+        task = self.selected_list[index]
+        print LINE_BREAK
+        print self.word_wrap("%s:   %s" % (index, task))
+        print LINE_BREAK
+        resp = raw_input("= Move task from %s list to %s list? (y/N): " % 
+                         (self._mode, new_list))
+        if resp.lower() == 'y':
+            self._delete_task(index)
+            self._task_lists[new_list].append(task)
+            self._mode = new_list
+        print LINE_BREAK
+        print '\n'
