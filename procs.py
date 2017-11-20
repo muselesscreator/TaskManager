@@ -1,91 +1,139 @@
-# Copyright (c) 2014, Rethink Robotics
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice,
-#    this list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-# 3. Neither the name of the Rethink Robotics nor the names of its
-#    contributors may be used to endorse or promote products derived from
-#    this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-
 import os
+import re
 import signal
 from subprocess import Popen, PIPE, STDOUT
+import time
 
 
-## Simple function to execute a linux shell command
-#  @param command The bash command to be run
-#  @param quiet Tells the function no to print the output of the command
-#  @param get_output Tells the script to return the output of the command
-def mk_process(command, quiet=False, get_output=False, shell=True):
-    if shell == True:
-        process = Popen(command, shell=True, stdout=PIPE,
-                               stderr=STDOUT)
-    else:
-        process = Popen(command, shell=False, stdout=PIPE,
-                               stderr=STDOUT)
-    stdout, stderr = process.communicate()
-    if quiet == False:
-        print stdout
-    if get_output:
-        return stdout
-    else:
-        return process.returncode
+class BWProcess(object):
+    """
+    Creates a wrapper around the subproces.Popen
 
+    @param command             - The command to be run
+    @param options{}           - Dictionary of options affecting how the command
+                                    is to be run
+           options.get_output  - returns stdout from run() method
+           options.quiet       - doesn't print the stdout from run() method
+    """
+    def __init__(self, command, options=dict()):
 
-# Pretty much the same as mk_process, but in a class so that
-#   the user can call the access the process after instantiation
-class RosProcess():
-    def __init__(self, command, quiet=True, get_output=False, shell=True):
-        if shell == True:
-            self.process = Popen(command, shell=True, stdout=None,
-                                        stdin=PIPE, stderr=STDOUT)
-        else:
-            self.process = Popen(command, shell=False, stdout=None,
-                                        stdin=PIPE, stderr=STDOUT)
-        self.quiet = quiet
-        self.get_output = get_output
+        self.command = command
+
+        def check_opt(key):
+            return options and key in options and options[key]
+
+        self._get_output = check_opt('get_output')
+        self._quiet = check_opt('quiet')
+
+        self.process = Popen(command, shell=True, stdout=PIPE,
+                             stdin=PIPE, stderr=STDOUT)
 
     def write(self, stdin):
+        # write <stdin> to the stdin stream of the process
         self.process.stdin.write(stdin)
 
+    def passive_run(self):
+        # return stdout and stderr or process without calling .communicate()
+        stdout = self.process.stdout.readlines()
+        stderr = self.process.stderr.readlines()
+        return '\n'.join([stdout, stderr])
+
     def run(self):
+        # run process and relinquish control of this thread to it until done.
         stdout, stderr = self.process.communicate()
-        if self.quiet == False:
+        self.returncode = self.process.returncode
+
+        self.stdout = stdout
+        self.stderr = stderr
+
+        if not self._quiet:
             print stdout
-        if self.get_output:
+        if self._get_output:
             return stdout
+
+
+def mk_process(command, options={'get_output': True, 'quiet': True}):
+    """
+    Simple wrapper around BWProcess class, which simplifies calls for the
+       the most common use-case
+
+    @arg command    - The command-line command to be run
+    @arg options    - Pass-through to BWProcess options param
+
+    @return         - The output of the run() method for the BWProcess
+    """
+    return BWProcess(command, options).run()
+
+
+def getUserFromUID(uid):
+    """
+    Returns the username associated with the uid provided by a ps call.
+
+    @arg uid         - The uid provided by a 'ps' call (int or str)
+
+    @return          -(str) username associated with uid
+    """
+    if uid.isdigit():
+        return mk_process('getent passwd "%s"' % uid).split(':')[0]
+    else:
+        return uid
+
+
+def getOtherProcs(search_terms):
+    """returns a list of process dictionaries for each non-self process matching
+    the given search terms
+
+    @param search_terms - regexp (or list of regexp) that must match the command
+                          as reported in the ps %a field.
+
+    @return             - [{uid, pid, name, command}] array of process dicts
+    """
+    if isinstance(search_terms, str):
+        search_terms = [search_terms]
+
+    def mk_proc(ps_line):
+        """return an info dict from the ps line"""
+        fields = ps_line.split()
+        print fields
+        return {
+            "uid": fields[0],
+            'pid':  int(fields[1]),
+            'name': fields[2],
+            'command': ' '.join(fields[3:]),
+        }
+
+    def matches(proc):
+        """determine if the proc item matches search_terms"""
+        return (proc['pid'] != os.getpid() and
+                all(re.search(term, proc['command']) for term in search_terms))
+
+    ps_output = mk_process('ps ahxw -o "%u %p %c %a"').strip().split('\n')
+    procs = [mk_proc(s) for s in ps_output]
+    return [p for p in procs if matches(p)]
+
+
+def attemptToKillOtherProcs(search_terms, timeout=5):
+    """
+    Attempts to kill all non-self processes that match the given search terms
+    Give up if the processes can't be killed after trying for a given length of time.
+
+    @param search_terms - regexp (or list of regexp) that must match the command
+                          as reported in the ps %a field.
+    @param timeout      - (int) number of seconds to wait before giving up
+
+    @return            - (bool) did I successfully kill all requested processes?
+    """
+    for proc in getOtherProcs(search_terms):
+        try:
+            os.kill(proc['pid'], signal.SIGTERM)
+        except:
+            pass
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if len(getOtherProcs(search_terms)) > 0:
+            time.sleep(1)
         else:
-            return self.process.returncode
+            break
 
-
-def python_processes():
-    return [p for p in mk_process('ps ax',
-                                  get_output=True,
-                                  quiet=True).split('\n') if 'python' in p]
-
-
-def python_proc_ids(proc):
-    return [int(p.split()[0]) for p in python_processes() if proc in p]
-
-
-def kill_python_procs(proc):
-    for idx in python_proc_ids(proc):
-        os.kill(idx, signal.SIGINT)
+    return len(getOtherProcs(search_terms)) == 0

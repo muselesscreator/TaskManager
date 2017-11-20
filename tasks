@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/bin/python2.7
 import os
 import argparse
 from devlogger import devlog
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     elif args.A:
         tsk_mgr.display(st_only=False)
     elif args.rm != None:
-        tsk_mgr.remove_list(args.m)
+        tsk_mgr.remove_list(args.rm)
     elif args.cd != None:
         tsk_mgr.change_default(args.cd)
         tsk_mgr.display()
